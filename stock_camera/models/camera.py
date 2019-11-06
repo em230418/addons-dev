@@ -78,6 +78,7 @@ class Camera(object):
 
         self.thread = threading.Thread(target=self._thread)
 
+        # TODO: rename to frame_callbacks
         self.recording_callbacks = {}
 
         # start background frame thread
@@ -110,21 +111,23 @@ class Camera(object):
             if self.recording_callbacks:
                 self.last_access = time.time()
 
-                recording_ids_to_stop = []
-                for recording_id, recording_callback in self.recording_callbacks:
+                record_ids_to_stop = []
+                for record_id, recording_callback in self.recording_callbacks:
                     try:
-                        if not recording_callback(recording_id, frame):
-                            _logger.debug("Stopped recording #{} due to request".format(recording_id))
-                            recording_ids_to_stop.append(recording_id)
+                        if not recording_callback(record_id, frame):
+                            _logger.debug("Stopped recording #{} due to request".format(record_id))
+                            record_ids_to_stop.append(record_id)
                     except Exception:
-                        recording_ids_to_stop.append(recording_id)
-                        _logger.exception("Stopped recording #{} due to exception".format(recording_id))
+                        record_ids_to_stop.append(record_id)
+                        _logger.exception("Stopped recording #{} due to exception".format(record_id))
 
-                for recording_id in recording_ids_to_stop:
+                for record_id in record_ids_to_stop:
                     try:
-                        del self.recording_callbacks[recording_id]
+                        del self.recording_callbacks[record_id]
                     except KeyError:
                         pass
+
+                # TODO: also use record_ids from stop_record
 
             # if there hasn't been any clients asking for frames in
             # the last 10 seconds then stop the thread
@@ -136,7 +139,7 @@ class Camera(object):
 
     @staticmethod
     def unlink(uri):
-        # TODO: destroy threads (it will also stop recoding)
+        # TODO: destroy threads (it will also stop recording)
         # TODO: use __del__ maybe?
         del cls.instances[uri]
 
@@ -155,12 +158,31 @@ class Camera(object):
             yield data
             del data
 
-    def start_recording(self, recording_id, callback):
-        if not recording_id:
-            raise InvalidRecordingId(recording_id)
+    def is_recording(self, record_id):
+        if not record_id:
+            raise InvalidRecordingId(record_id)
+
+        print(self.recording_callbacks, record_id)
+        return record_id in self.recording_callbacks
+
+    # TODO: do we need on_stop_callback?
+    def start_recording(self, record_id, on_start_callback, on_frame_callback):
+        if not record_id:
+            raise InvalidRecordingId(record_id)
         
-        if recording_id in self.recording_callbacks:
-            raise RecordingIdAlreadyExists(recording_id)
-        
-        self.recording_callbacks[recording_id] = callback
-        _logger.debug("Started recording #{}...".format(recording_id))
+        if record_id in self.recording_callbacks:
+            raise RecordingIdAlreadyExists(record_id)
+
+        try:
+            on_start_callback(record_id)
+            self.recording_callbacks[record_id] = on_frame_callback
+            _logger.debug("Started recording #{}...".format(record_id))
+        except:
+            _logger.exception("Failed to start recording #{}".format(record_id))
+            
+
+    def stop_recording(self, record_id):
+        if not self.is_recording(record_id):
+            return
+
+        self.stop_record_ids.append(record_id)

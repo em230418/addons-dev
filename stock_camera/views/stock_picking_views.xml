@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2019 Eugene Molotov <https://it-projects.info/team/em230418>
+    License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html). -->
+<odoo>
+    <record id="view_picking_form_inherit" model="ir.ui.view">
+        <field name="name">view_picking_form_inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='picking_type_entire_packs']" position="after">
+                <field name="camera_is_recording" invisible="1" />
+                <field name="camera" invisible="1" />
+                <!-- TODO: как-то выделить кнопки -->
+                <button name="camera_record_start" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', True), ('camera', '=', False)]}" icon="fa-video" string="Record" />
+                <button name="camera_record_stop" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', False), ('camera', '=', False)]}" icon="fa-video" string="Stop" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -22,6 +22,7 @@
     ],
     "external_dependencies": {"python": ["cv2"], "bin": []},
     "data": [
+        'views/stock_picking_views.xml',
         'views/stock_camera.xml',
         'security/ir.model.access.csv',
     ],
