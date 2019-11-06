@@ -2,7 +2,8 @@ import cv2
 import time
 import threading
 import logging
-import uuid
+import threading
+
 try:
     from greenlet import getcurrent as get_ident
 except ImportError:
@@ -66,27 +67,43 @@ class Camera(object):
 
     def __new__(cls, uri):
         if uri not in cls.instances:
+            _logger.debug("Creating new instance for {}".format(uri))
             cls.instances[uri] = object.__new__(cls)
+        else:
+            _logger.debug("Using created instance for {}".format(uri))
         return cls.instances[uri]
         
     def __init__(self, uri):
+        if getattr(self, "uri", None):
+            # No need to run __init__ for already existing instance
+            # the only thing we need - make sure that thread exists
+            self._start_thread()
+            return
+
         self.uri = uri
         self.event = CameraEvent()
         self.frame = None
+        self.thread = None
 
         self.last_access = time.time()
-
-        self.thread = threading.Thread(target=self._thread)
 
         # TODO: rename to frame_callbacks
         self.recording_callbacks = {}
 
+        self.record_ids_requested_to_stop_lock = threading.Lock()
+        self.record_ids_requested_to_stop = []
+
         # start background frame thread
-        self.thread.start()
+        self._start_thread()
 
         # wait until frames are available
         while self.get_frame() is None:
             time.sleep(0)
+
+    def _start_thread(self):
+        if not self.thread:
+            self.thread = threading.Thread(target=self._thread)
+            self.thread.start()
         
     def get_frame(self):
         """Return the current camera frame."""
@@ -112,22 +129,19 @@ class Camera(object):
                 self.last_access = time.time()
 
                 record_ids_to_stop = []
-                for record_id, recording_callback in self.recording_callbacks:
+                for record_id, recording_callback in self.recording_callbacks.items():
                     try:
                         if not recording_callback(record_id, frame):
-                            _logger.debug("Stopped recording #{} due to request".format(record_id))
+                            _logger.debug("Stopped recording #{} due to callback result".format(record_id))
                             record_ids_to_stop.append(record_id)
                     except Exception:
                         record_ids_to_stop.append(record_id)
                         _logger.exception("Stopped recording #{} due to exception".format(record_id))
 
-                for record_id in record_ids_to_stop:
-                    try:
-                        del self.recording_callbacks[record_id]
-                    except KeyError:
-                        pass
-
-                # TODO: also use record_ids from stop_record
+                self._clean_up_stopped_recording(record_ids_to_stop)
+                
+                with self.record_ids_requested_to_stop_lock:
+                    self._clean_up_stopped_recording(self.record_ids_requested_to_stop)
 
             # if there hasn't been any clients asking for frames in
             # the last 10 seconds then stop the thread
@@ -162,7 +176,6 @@ class Camera(object):
         if not record_id:
             raise InvalidRecordingId(record_id)
 
-        print(self.recording_callbacks, record_id)
         return record_id in self.recording_callbacks
 
     # TODO: do we need on_stop_callback?
@@ -185,4 +198,12 @@ class Camera(object):
         if not self.is_recording(record_id):
             return
 
-        self.stop_record_ids.append(record_id)
+        with self.record_ids_requested_to_stop_lock:
+            self.record_ids_requested_to_stop.append(record_id)
+
+    def _clean_up_stopped_recording(self, record_ids):
+        for record_id in record_ids:
+            try:
+                del self.recording_callbacks[record_id]
+            except KeyError:
+                pass

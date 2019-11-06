@@ -14,7 +14,7 @@ class StockPicking(models.Model):
     @api.depends("camera")
     def _compute_camera_is_recording(self):
         for s in self:
-            s.camera_is_recording = s.camera.camera_instance().is_recording(s.id) if s.camera else False
+            s.camera_is_recording = s.camera.camera_instance().is_recording(s.id) if s.camera and s.id else False
 
     # TODO: on change camera - stop recording prevous one
     camera = fields.Many2one('stock.camera.config', 'Camera')
@@ -29,11 +29,13 @@ class StockPicking(models.Model):
             pass
 
         def on_frame_callback(record_id, frame):
-            print("frame", record_id)
+            print("frame", record_id, frame[0:10])
+            return True
         
         for s in self:
             s.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback)
 
     @api.multi
     def camera_record_stop(self):
-        raise NotImplementedError()
+        for s in self:
+            s.camera.camera_instance().stop_recording(s.id)
