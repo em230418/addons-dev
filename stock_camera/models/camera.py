@@ -14,6 +14,8 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
+INACTIVITY_TIME_SECONDS = 10
+
 class InvalidRecordingId(Exception):
     pass
 
@@ -74,6 +76,8 @@ class Camera(object):
         return cls.instances[uri]
         
     def __init__(self, uri):
+        self.last_access = time.time()
+
         if getattr(self, "uri", None):
             # No need to run __init__ for already existing instance
             # the only thing we need - make sure that thread exists
@@ -84,8 +88,6 @@ class Camera(object):
         self.event = CameraEvent()
         self.frame = None
         self.thread = None
-
-        self.last_access = time.time()
 
         # TODO: rename to frame_callbacks
         self.recording_callbacks = {}
@@ -128,10 +130,20 @@ class Camera(object):
             if self.recording_callbacks:
                 self.last_access = time.time()
 
+                # stoping recording due user request, if required
+                with self.record_ids_requested_to_stop_lock:
+                    if self.record_ids_requested_to_stop:
+                        _logger.debug("Stopped recording {} due to user request".format(
+                            ', '.join(map(lambda r: "#{}".format(r), self.record_ids_requested_to_stop))
+                        )
+                    self._clean_up_stopped_recording(self.record_ids_requested_to_stop)
+                    self.record_ids_requested_to_stop.clear()
+
                 record_ids_to_stop = []
                 for record_id, recording_callback in self.recording_callbacks.items():
                     try:
-                        if not recording_callback(record_id, frame):
+                        callback_result = recording_callback(record_id, frame)
+                        if callback_result is not None and not callback_result:
                             _logger.debug("Stopped recording #{} due to callback result".format(record_id))
                             record_ids_to_stop.append(record_id)
                     except Exception:
@@ -140,12 +152,9 @@ class Camera(object):
 
                 self._clean_up_stopped_recording(record_ids_to_stop)
                 
-                with self.record_ids_requested_to_stop_lock:
-                    self._clean_up_stopped_recording(self.record_ids_requested_to_stop)
-
             # if there hasn't been any clients asking for frames in
-            # the last 10 seconds then stop the thread
-            if time.time() - self.last_access > 10:
+            # the last INACTIVITY_TIME_SECONDS then stop the thread
+            if time.time() - self.last_access > INACTIVITY_TIME_SECONDS:
                 frames_iterator.close()
                 _logger.debug('Stopping camera thread due to inactivity.')
                 break
