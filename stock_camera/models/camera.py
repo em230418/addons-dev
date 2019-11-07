@@ -124,7 +124,7 @@ class Camera(object):
         """Camera background thread."""
         _logger.debug('Starting camera thread.')
         frames_iterator = self.frames()
-        for img, frame in frames_iterator:
+        for frame, img in frames_iterator:
             self.frame = frame
             self.event.set()  # send signal to clients
             time.sleep(0)
@@ -145,7 +145,7 @@ class Camera(object):
                 record_ids_to_stop = []
                 for record_id, (on_frame_callback, _) in self.recording_callbacks.items():
                     try:
-                        callback_result = on_frame_callback(record_id, frame)
+                        callback_result = on_frame_callback(record_id, img)
                         if callback_result is not None and not callback_result:
                             _logger.debug("Stopped recording #{} due to callback result".format(record_id))
                             record_ids_to_stop.append(record_id)
@@ -181,11 +181,11 @@ class Camera(object):
                                 
         while True:
             # read current frame
-            _, frame = camera.read()
+            _, img = camera.read()
 
             # encode as a jpeg image and return it
-            img = cv2.imencode('.jpg', frame)[1].tobytes()
-            yield img, frame
+            frame = cv2.imencode('.jpg', img)[1].tobytes()
+            yield frame, img
 
     def is_recording(self, record_id):
         if not record_id:
