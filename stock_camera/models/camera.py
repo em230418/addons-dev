@@ -89,6 +89,9 @@ class Camera(object):
         self.frame = None
         self.thread = None
 
+        self.video_width = None
+        self.video_height = None
+
         # TODO: rename to frame_callbacks
         self.recording_callbacks = {}
 
@@ -121,7 +124,7 @@ class Camera(object):
         """Camera background thread."""
         _logger.debug('Starting camera thread.')
         frames_iterator = self.frames()
-        for frame in frames_iterator:
+        for img, frame in frames_iterator:
             self.frame = frame
             self.event.set()  # send signal to clients
             time.sleep(0)
@@ -135,14 +138,14 @@ class Camera(object):
                     if self.record_ids_requested_to_stop:
                         _logger.debug("Stopped recording {} due to user request".format(
                             ', '.join(map(lambda r: "#{}".format(r), self.record_ids_requested_to_stop))
-                        )
+                        ))
                     self._clean_up_stopped_recording(self.record_ids_requested_to_stop)
                     self.record_ids_requested_to_stop.clear()
 
                 record_ids_to_stop = []
-                for record_id, recording_callback in self.recording_callbacks.items():
+                for record_id, (on_frame_callback, _) in self.recording_callbacks.items():
                     try:
-                        callback_result = recording_callback(record_id, frame)
+                        callback_result = on_frame_callback(record_id, frame)
                         if callback_result is not None and not callback_result:
                             _logger.debug("Stopped recording #{} due to callback result".format(record_id))
                             record_ids_to_stop.append(record_id)
@@ -172,14 +175,17 @@ class Camera(object):
             # TODO: return picture
             raise RuntimeError('Could not start camera.')
 
+        self.video_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.video_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.video_fps = int(camera.get(cv2.CAP_PROP_FPS))
+                                
         while True:
             # read current frame
-            _, img = camera.read()
+            _, frame = camera.read()
 
             # encode as a jpeg image and return it
-            data = cv2.imencode('.jpg', img)[1].tobytes()
-            yield data
-            del data
+            img = cv2.imencode('.jpg', frame)[1].tobytes()
+            yield img, frame
 
     def is_recording(self, record_id):
         if not record_id:
@@ -188,7 +194,7 @@ class Camera(object):
         return record_id in self.recording_callbacks
 
     # TODO: do we need on_stop_callback?
-    def start_recording(self, record_id, on_start_callback, on_frame_callback):
+    def start_recording(self, record_id, on_start_callback, on_frame_callback, on_finish_callback):
         if not record_id:
             raise InvalidRecordingId(record_id)
         
@@ -196,8 +202,8 @@ class Camera(object):
             raise RecordingIdAlreadyExists(record_id)
 
         try:
-            on_start_callback(record_id)
-            self.recording_callbacks[record_id] = on_frame_callback
+            on_start_callback(record_id, self.video_width, self.video_height, self.video_fps)
+            self.recording_callbacks[record_id] = on_frame_callback, on_finish_callback
             _logger.debug("Started recording #{}...".format(record_id))
         except:
             _logger.exception("Failed to start recording #{}".format(record_id))
@@ -212,6 +218,12 @@ class Camera(object):
 
     def _clean_up_stopped_recording(self, record_ids):
         for record_id in record_ids:
+            try:
+                on_finish_callback = self.recording_callbacks[record_id][1]
+                on_finish_callback(record_id)
+            except Exception:
+                _logger.exception("Error while executing on_finish_callback for #{}".format(record_id))
+
             try:
                 del self.recording_callbacks[record_id]
             except KeyError:
