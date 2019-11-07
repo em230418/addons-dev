@@ -6,6 +6,7 @@ import string
 from odoo import api, fields, models
 from odoo.tools import config
 from os import path, makedirs
+from ..tools import upload_vimeo
 import cv2
 
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
@@ -30,19 +31,22 @@ class StockPicking(models.Model):
     def camera_record_start(self):
         output = None
         output_filename = None
+        output_filename_abs = None
         def on_start_callback(record_id, video_width, video_height, video_fps):
             nonlocal output
-            nonlocal output_dir
+            nonlocal output_filename_abs
             nonlocal output_filename
-            filestore_path = config.filestore(self._cr.dbname),
+            filestore_path = config.filestore(self._cr.dbname)
+            import wdb; wdb.set_trace()
             output_dir = path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
             makedirs(output_dir, exist_ok = True)
             
             filename = "{}_{}_{}.avi".format(self.name, int(time.time()), self.id)
             filename = ''.join(c for c in filename if c in VALID_CHARS)
 
+            output_filename_abs = path.join(output_dir, filename)
             output = cv2.VideoWriter(
-                path.join(output_dir, filename),
+                output_filename_abs,
                 cv2.VideoWriter_fourcc('M','J','P','G'),
                 min(video_fps, 30),  # it can give overly high fps (180 000), so it would be better to limit it
                 (video_width, video_height)
@@ -55,9 +59,11 @@ class StockPicking(models.Model):
 
         def on_finish_callback(record_id):
             nonlocal output
+            nonlocal output_filename_abs
             output.release()
+
+            upload_vimeo.upload(output_filename_abs, time.strftime("{name} - %D %T".format(name=self.name)))
             # TODO: create attachment
-            # TODO: post it to vimeo
         
         for s in self:
             s.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback, on_finish_callback)

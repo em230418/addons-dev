@@ -9,7 +9,7 @@ _logger = logging.getLogger(__name__)
 
 from odoo.tools import config
 
-def upload(filename, title, description):
+def upload(filename, title, description = ""):
     if not vimeo:
         _logger.error("Cannot upload to vimeo: module PyVimeo is not installed")
         return
@@ -26,7 +26,7 @@ def upload(filename, title, description):
     for i in required_options:
         value = config.options.get(i)
         if not value:
-            missing_options.append(value)
+            missing_options.append(i)
 
         required_options_values.append(value)
 
