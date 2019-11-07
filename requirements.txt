@@ -2,3 +2,4 @@ icalendar
 boto3
 websocket-client
 opencv-python-headless
+PyVimeo

@@ -20,7 +20,7 @@
     "depends": [
         'stock',
     ],
-    "external_dependencies": {"python": ["cv2"], "bin": []},
+    "external_dependencies": {"python": ["cv2", "vimeo"], "bin": []},
     "data": [
         'views/stock_picking_views.xml',
         'views/stock_camera.xml',
