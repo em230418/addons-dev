@@ -37,7 +37,6 @@ class StockPicking(models.Model):
             nonlocal output_filename_abs
             nonlocal output_filename
             filestore_path = config.filestore(self._cr.dbname)
-            import wdb; wdb.set_trace()
             output_dir = path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
             makedirs(output_dir, exist_ok = True)
             
