@@ -211,10 +211,18 @@ class Camera(object):
 
     def stop_recording(self, record_id):
         if not self.is_recording(record_id):
-            return
+            return False
 
         with self.record_ids_requested_to_stop_lock:
             self.record_ids_requested_to_stop.append(record_id)
+
+        # wait until callback is removed
+        # bad, but not ugly
+        # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
+        while self.recording_callbacks.get(record_id) is not None:
+            time.sleep(1)
+
+        return True
 
     def _clean_up_stopped_recording(self, record_ids):
         for record_id in record_ids:

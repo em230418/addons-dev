@@ -26,31 +26,30 @@ class StockPicking(models.Model):
     camera = fields.Many2one('stock.camera.config', 'Camera')
     camera_is_recording = fields.Boolean('Is being recorded by stock camera?', compute=_compute_camera_is_recording, readonly=True, store=False)
     camera_filename_prefix = fields.Char('Record output filename prefix')  # TODO: validate it
+    last_uploaded_video = fields.Char("Last uploaded video", readonly=True)
+
+
+    def _get_output_filename(self, prefix="tmp"):
+        record_id = self.id
+        filestore_path = config.filestore(self._cr.dbname)
+        output_dir = path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
+        makedirs(output_dir, exist_ok = True)
+        filename = "{}_{}.avi".format(prefix, record_id)
+        return path.join(output_dir, filename)
 
     @api.multi
     def camera_record_start(self):
         output = None
-        output_filename = None
-        output_filename_abs = None
+        
         def on_start_callback(record_id, video_width, video_height, video_fps):
             nonlocal output
-            nonlocal output_filename_abs
-            nonlocal output_filename
-            filestore_path = config.filestore(self._cr.dbname)
-            output_dir = path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
-            makedirs(output_dir, exist_ok = True)
-            
-            filename = "{}_{}_{}.avi".format(self.name, int(time.time()), self.id)
-            filename = ''.join(c for c in filename if c in VALID_CHARS)
-
-            output_filename_abs = path.join(output_dir, filename)
+            output_filename_abs = self._get_output_filename()
             output = cv2.VideoWriter(
                 output_filename_abs,
                 cv2.VideoWriter_fourcc('M','J','P','G'),
                 min(video_fps, 30),  # it can give overly high fps (180 000), so it would be better to limit it
                 (video_width, video_height)
             )
-            output_filename = filename
 
         def on_frame_callback(record_id, frame):
             nonlocal output
@@ -58,16 +57,18 @@ class StockPicking(models.Model):
 
         def on_finish_callback(record_id):
             nonlocal output
-            nonlocal output_filename_abs
             output.release()
 
-            upload_vimeo.upload(output_filename_abs, time.strftime("{name} - %D %T".format(name=self.name)))
-            # TODO: create attachment
-        
         for s in self:
             s.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback, on_finish_callback)
 
     @api.multi
     def camera_record_stop(self):
         for s in self:
-            s.camera.camera_instance().stop_recording(s.id)
+            # check if it was recording actually
+            if not s.camera.camera_instance().stop_recording(s.id):
+                continue
+            output_filename_abs = self._get_output_filename()
+            upload_uri = upload_vimeo.upload(output_filename_abs, time.strftime("{name} - %D %T".format(name=self.name)))
+            if upload_uri:
+                s.last_uploaded_video =  upload_uri

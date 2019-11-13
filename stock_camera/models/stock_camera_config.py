@@ -10,7 +10,7 @@ class StockCameraConfig(models.Model):
     _name = 'stock.camera.config'
     _description = 'Camera configuration'
 
-    title = fields.Char('Title', required=True)
+    name = fields.Char('Name', required=True)
     uri = fields.Char('URI to ip camera', required=True)  # TODO: validate url
 
     # TODO: надо выбирать, куда сохранять

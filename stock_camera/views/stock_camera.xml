@@ -9,7 +9,7 @@
             <form string="Backup">
                 <sheet>
                     <group>
-                        <field name="title"/>
+                        <field name="name"/>
                         <field name="uri"/>
                     </group>
                 </sheet>
@@ -22,7 +22,7 @@
         <field name="model">stock.camera.config</field>
         <field name="arch" type="xml">
         <tree>
-            <field name="title" />
+            <field name="name" />
         </tree>
         </field>
     </record>

@@ -38,4 +38,8 @@ def upload(filename, title, description = ""):
 
     client = vimeo.VimeoClient(token=token, key=key, secret=secret)
 
-    return client.upload(filename, data={"name": title, "description": description})
+    result = client.upload(filename, data={"name": title, "description": description})
+    if not result:
+        return result
+
+    return "https://vimeo.com" + result.replace("/videos", "")

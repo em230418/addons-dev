@@ -15,6 +15,7 @@
             </xpath>
             <xpath expr="//field[@name='backorder_id']" position="after">
                 <field name="camera" />
+                <field name="last_uploaded_video" widget="url" />
             </xpath>
         </field>
     </record>
