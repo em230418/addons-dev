@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2019 Eugene Molotov <https://it-projects.info/team/em230418>
+    License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html). -->
+<odoo>
+    <record id="stock_camera_config_example_1" model="stock.camera.config">
+        <field name="name">camera 1</field>
+        <field name="uri">rtsp://170.93.143.139/rtplive/470011e600ef003a004ee33696235daa</field>
+    </record>
+
+    <record id="stock_camera_config_example_2" model="stock.camera.config">
+        <field name="name">camera 2</field>
+        <field name="uri">rtmp://semerkandglb.mediatriple.net:1935/semerkandliveedge/semerkand2</field>
+    </record>
+</odoo>
