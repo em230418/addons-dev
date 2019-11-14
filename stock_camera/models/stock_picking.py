@@ -6,11 +6,8 @@ import string
 from odoo import api, fields, models
 from odoo.tools import config
 from os import path, makedirs
-from ..tools import upload_vimeo
+from .stock_camera_video import output_dir_abs
 import cv2
-
-VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
-VIDEO_OUTPUT_DIRNAME = "stock_picking_video"
 
 
 class StockPicking(models.Model):
@@ -22,18 +19,23 @@ class StockPicking(models.Model):
         for s in self:
             s.camera_is_recording = s.camera.camera_instance().is_recording(s.id) if s.camera and s.id else False
 
+    @api.depends("videos")
+    def _compute_last_uploaded_video(self):
+        for record in self:
+            uploaded_videos = record.videos.filtered(lambda v: v.url)
+            if uploaded_videos:
+                record.last_uploaded_video = uploaded_videos.sorted(reverse=True)[0].url
+
     # TODO: on change camera - stop recording prevous one
     camera = fields.Many2one('stock.camera.config', 'Camera')
     camera_is_recording = fields.Boolean('Is being recorded by stock camera?', compute=_compute_camera_is_recording, readonly=True, store=False)
     camera_filename_prefix = fields.Char('Record output filename prefix')  # TODO: validate it
-    last_uploaded_video = fields.Char("Last uploaded video", readonly=True)
-
+    last_uploaded_video = fields.Char("Last uploaded video", readonly=True, compute=_compute_last_uploaded_video)
+    videos = fields.One2many('stock.camera.video', 'picking', 'Recorded videos', readonly=True)
 
     def _get_output_filename(self, prefix="tmp"):
         record_id = self.id
-        filestore_path = config.filestore(self._cr.dbname)
-        output_dir = path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
-        makedirs(output_dir, exist_ok = True)
+        output_dir = output_dir_abs(self)
         filename = "{}_{}.avi".format(prefix, record_id)
         return path.join(output_dir, filename)
 
@@ -65,10 +67,11 @@ class StockPicking(models.Model):
     @api.multi
     def camera_record_stop(self):
         for s in self:
+
             # check if it was recording actually
             if not s.camera.camera_instance().stop_recording(s.id):
                 continue
-            output_filename_abs = self._get_output_filename()
-            upload_uri = upload_vimeo.upload(output_filename_abs, time.strftime("{name} - %D %T".format(name=self.name)))
-            if upload_uri:
-                s.last_uploaded_video =  upload_uri
+
+            self.env['stock.camera.video'].create({
+                "picking": s,
+            })

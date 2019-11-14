@@ -22,14 +22,13 @@
     ],
     "external_dependencies": {"python": ["cv2", "vimeo"], "bin": []},
     "data": [
+        'data/ir_cron.xml',
         'views/stock_picking_views.xml',
         'views/stock_camera.xml',
         'security/ir.model.access.csv',
     ],
     "demo": [
         'demo/stock_camera_config.xml',
-        # TODO: rtsp://170.93.143.139/rtplive/470011e600ef003a004ee33696235daa
-        # TODO: rtmp://semerkandglb.mediatriple.net:1935/semerkandliveedge/semerkand2
     ],
     "qweb": [
     ],

@@ -38,7 +38,11 @@ def upload(filename, title, description = ""):
 
     client = vimeo.VimeoClient(token=token, key=key, secret=secret)
 
-    result = client.upload(filename, data={"name": title, "description": description})
+    result = client.upload(filename, data={
+        "name": title,
+        "description": description,
+        "chuck_size": 512 * 1024,  # https://github.com/vimeo/vimeo.py/issues/141#issuecomment-517446424
+    })
     if not result:
         return result
 
