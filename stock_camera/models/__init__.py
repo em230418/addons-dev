@@ -3,3 +3,4 @@
 from . import stock_camera_config
 from . import stock_camera_video
 from . import stock_picking
+from . import stock_move

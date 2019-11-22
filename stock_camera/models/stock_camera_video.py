@@ -42,6 +42,9 @@ class StockCameraVideo(models.Model):
         
     def create(self, vals):
         now = fields.Datetime.now()
+        vals["picking"] = vals["move"].picking_id
+        del vals["move"]
+
         tmp_file = vals["picking"]._get_output_filename()
         new_file = join(
             output_dir_abs(self),

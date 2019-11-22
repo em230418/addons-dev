@@ -16,8 +16,8 @@ class StockPicking(models.Model):
 
     @api.depends("camera")
     def _compute_camera_is_recording(self):
-        for s in self:
-            s.camera_is_recording = s.camera.camera_instance().is_recording(s.id) if s.camera and s.id else False
+        for record in self:
+            record.camera_is_recording = record.move_lines.filtered(lambda move: move.camera_is_recording)
 
     @api.depends("videos")
     def _compute_last_uploaded_video(self):
@@ -32,46 +32,3 @@ class StockPicking(models.Model):
     camera_filename_prefix = fields.Char('Record output filename prefix')  # TODO: validate it
     last_uploaded_video = fields.Char("Last uploaded video", readonly=True, compute=_compute_last_uploaded_video)
     videos = fields.One2many('stock.camera.video', 'picking', 'Recorded videos', readonly=True)
-
-    def _get_output_filename(self, prefix="tmp"):
-        record_id = self.id
-        output_dir = output_dir_abs(self)
-        filename = "{}_{}.avi".format(prefix, record_id)
-        return path.join(output_dir, filename)
-
-    @api.multi
-    def camera_record_start(self):
-        output = None
-        
-        def on_start_callback(record_id, video_width, video_height, video_fps):
-            nonlocal output
-            output_filename_abs = self._get_output_filename()
-            output = cv2.VideoWriter(
-                output_filename_abs,
-                cv2.VideoWriter_fourcc('M','J','P','G'),
-                min(video_fps, 30),  # it can give overly high fps (180 000), so it would be better to limit it
-                (video_width, video_height)
-            )
-
-        def on_frame_callback(record_id, frame):
-            nonlocal output
-            output.write(frame)
-
-        def on_finish_callback(record_id):
-            nonlocal output
-            output.release()
-
-        for s in self:
-            s.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback, on_finish_callback)
-
-    @api.multi
-    def camera_record_stop(self):
-        for s in self:
-
-            # check if it was recording actually
-            if not s.camera.camera_instance().stop_recording(s.id):
-                continue
-
-            self.env['stock.camera.video'].create({
-                "picking": s,
-            })
