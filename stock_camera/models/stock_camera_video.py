@@ -43,22 +43,21 @@ class StockCameraVideo(models.Model):
     def create(self, vals):
         now = fields.Datetime.now()
         vals["picking"] = vals["move"].picking_id
-        del vals["move"]
+        tmp_file = vals["move"]._get_output_filename()
+        vals["name"] = "{} - {} - {}".format(vals["picking"].name, vals["move"].name, now)
 
-        tmp_file = vals["picking"]._get_output_filename()
         new_file = join(
             output_dir_abs(self),
-            "{}_{}.avi".format(
-                "".join([c for c in vals["picking"].name if c in VALID_CHARS]),
-                now
+            "{}_.avi".format(
+                "".join([c for c in vals["name"] if c in VALID_CHARS]),
             ),
         )
 
         rename(tmp_file, new_file)
-        vals["name"] = "{} - {}".format(vals["picking"].name, now)
         vals["filename"] = basename(new_file)
         vals["picking"] = vals["picking"].id
         vals["date_created"] = now
+        del vals["move"]
         
         return super(StockCameraVideo, self).create(vals)
 

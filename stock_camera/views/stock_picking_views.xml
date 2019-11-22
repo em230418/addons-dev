@@ -9,10 +9,10 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook/page/field[@name='move_ids_without_package']/tree/field[@name='product_uom_qty']" position="before">
                 <field name="camera_is_recording" invisible="1" />
-                <field name="picking_id" invisible="1" />
+                <field name="camera" invisible="1" />
                 <!-- TODO: как-то выделить кнопки -->
-                <button name="camera_record_start" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', True), ('picking_id.camera', '=', False)]}" icon="fa-video" string="Record" />
-                <button name="camera_record_stop" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', False), ('picking_id.camera', '=', False)]}" icon="fa-video" string="Stop" />
+                <button name="camera_record_start" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', True), ('camera', '=', False)]}" icon="fa-video-camera" string="Record" />
+                <button name="camera_record_stop" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', False), ('camera', '=', False)]}" icon="fa-stop" string="Stop" />
             </xpath>
             <xpath expr="//field[@name='backorder_id']" position="after">
                 <field name="camera" />

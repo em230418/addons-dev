@@ -1,13 +1,8 @@
 # Copyright 2019 Eugene Molotov <https://it-projects.info/team/em230418>
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html).
 
-import time
-import string
 from odoo import api, fields, models
 from odoo.tools import config
-from os import path, makedirs
-from .stock_camera_video import output_dir_abs
-import cv2
 
 
 class StockPicking(models.Model):

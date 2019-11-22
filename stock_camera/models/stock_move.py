@@ -2,6 +2,11 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html).
 
 from odoo import api, fields, models
+from .stock_camera_video import output_dir_abs
+from os import path, makedirs
+import cv2
+import time
+import string
 
 
 class StockMove(models.Model):
@@ -11,10 +16,11 @@ class StockMove(models.Model):
     @api.depends("picking_id")
     def _compute_camera_is_recording(self):
         for record in self:
-            picking = record.picking
+            picking = record.picking_id
             record.camera_is_recording = picking.camera.camera_instance().is_recording(record.id) if picking.camera and record.id else False
 
     camera_is_recording = fields.Boolean('Is being recorded by stock camera?', compute=_compute_camera_is_recording, readonly=True, store=False)
+    camera = fields.Many2one(related="picking_id.camera", readonly=True)
 
     def _get_output_filename(self, prefix="tmp"):
         record_id = self.id
