@@ -8,10 +8,10 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook/page/field[@name='move_ids_without_package']/tree/field[@name='product_uom_qty']" position="before">
+                <field name="camera_is_busy" invisible="1" />
                 <field name="camera_is_recording" invisible="1" />
                 <field name="camera" invisible="1" />
-                <!-- TODO: как-то выделить кнопки -->
-                <button name="camera_record_start" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', True), ('camera', '=', False)]}" icon="fa-video-camera" string="Record" />
+                <button name="camera_record_start" type="object" attrs="{'invisible': ['|', '|', ('camera_is_busy', '=', True), ('camera_is_recording', '=', True), ('camera', '=', False)]}" icon="fa-video-camera" string="Record" />
                 <button name="camera_record_stop" type="object" attrs="{'invisible': ['|', ('camera_is_recording', '=', False), ('camera', '=', False)]}" icon="fa-stop" string="Stop" />
             </xpath>
             <xpath expr="//field[@name='backorder_id']" position="after">

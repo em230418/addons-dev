@@ -15,10 +15,17 @@ class StockMove(models.Model):
 
     @api.depends("picking_id")
     def _compute_camera_is_recording(self):
+        is_busy = False
         for record in self:
             picking = record.picking_id
             record.camera_is_recording = picking.camera.camera_instance().is_recording(record.id) if picking.camera and record.id else False
+            if record.camera_is_recording:
+                is_busy = True
 
+        for record in self:
+            record.camera_is_busy = is_busy
+
+    camera_is_busy = fields.Boolean('Is camera already recording other move in current picking?', compute=_compute_camera_is_recording, readonly=True, store=False)
     camera_is_recording = fields.Boolean('Is being recorded by stock camera?', compute=_compute_camera_is_recording, readonly=True, store=False)
     camera = fields.Many2one(related="picking_id.camera", readonly=True)
 
