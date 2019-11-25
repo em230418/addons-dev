@@ -101,10 +101,6 @@ class Camera(object):
         # start background frame thread
         self._start_thread()
 
-        # wait until frames are available
-        while self.get_frame() is None:
-            time.sleep(0)
-
     def _start_thread(self):
         if not self.thread:
             self.thread = threading.Thread(target=self._thread)
@@ -173,7 +169,8 @@ class Camera(object):
         camera = cv2.VideoCapture(self.uri)
         if not camera.isOpened():
             # TODO: return picture
-            raise RuntimeError('Could not start camera.')
+            _logger.error("Could not start camera {}".format(self.uri))
+            return
 
         self.video_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.video_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
