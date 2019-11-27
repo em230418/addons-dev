@@ -4,7 +4,7 @@
 from odoo import api, fields, models
 from .stock_move_video import output_dir_abs
 from os import path, makedirs
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 import cv2
 import time
 import string
@@ -40,6 +40,12 @@ class StockMove(models.Model):
     @api.multi
     def camera_record_start(self):
         self.ensure_one()
+
+        if self.camera_is_recording:
+            raise ValidationError("Camera is already recording this product")
+
+        if self.camera_is_busy:
+            raise ValidationError("Camera is busy")
 
         if self.video:
             if not self.env.user.has_group('stock_camera.group_allow_overwrite_video'):

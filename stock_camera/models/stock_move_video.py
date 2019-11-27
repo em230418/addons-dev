@@ -3,7 +3,10 @@
 
 from odoo import api, fields, models
 from odoo.tools import config
-from os import rename, path, makedirs
+# TODO: do not import, use just os
+import os
+import os.path
+from os import path
 from os.path import split, join, basename
 from ..tools import upload_vimeo
 from threading import Lock
@@ -20,8 +23,8 @@ _logger = logging.getLogger(__name__)
 
 def output_dir_abs(self):
     filestore_path = config.filestore(self._cr.dbname)
-    output_dir = path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
-    makedirs(output_dir, exist_ok=True)
+    output_dir = os.path.join(filestore_path, VIDEO_OUTPUT_DIRNAME)
+    os.makedirs(output_dir, exist_ok=True)
     return output_dir
     
 
@@ -56,7 +59,7 @@ class StockMoveVideo(models.Model):
             ),
         )
 
-        rename(tmp_file, new_file)
+        os.rename(tmp_file, new_file)
         vals["filename"] = basename(new_file)
         vals["date_created"] = now
         vals["move"] = vals["move"].id
@@ -89,3 +92,11 @@ class StockMoveVideo(models.Model):
         _logger.debug("Finished uploading")
 
         upload_lock.release()
+
+    def unlink(self):
+        file_to_remove = os.path.join(output_dir_abs(self), self.filename)
+        try:
+            os.unlink(file_to_remove)
+        except:
+            _logger.exception("Failed to delete video file")
+        super(StockMoveVideo, self).unlink()
