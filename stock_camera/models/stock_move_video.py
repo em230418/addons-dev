@@ -33,6 +33,7 @@ class StockMoveVideo(models.Model):
 
     name = fields.Char("Name", required=True)
     move = fields.Many2one("stock.move", required=True)
+    picking = fields.Many2one("stock.picking", related="move.picking_id", readonly=True)
     filename = fields.Char("Filename", required=True)
     date_created = fields.Datetime("Video creation date", readonly=True, required=True)
     date_uploaded = fields.Datetime("Video upload date", readonly=True)
@@ -59,6 +60,7 @@ class StockMoveVideo(models.Model):
         vals["filename"] = basename(new_file)
         vals["date_created"] = now
         vals["move"] = vals["move"].id
+        vals["picking"] = picking.id
         
         return super(StockMoveVideo, self).create(vals)
 
