@@ -2,7 +2,7 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html).
 
 from odoo import api, fields, models
-from .stock_camera_video import output_dir_abs
+from .stock_move_video import output_dir_abs
 from os import path, makedirs
 import cv2
 import time
@@ -28,6 +28,7 @@ class StockMove(models.Model):
     camera_is_busy = fields.Boolean('Is camera already recording other move in current picking?', compute=_compute_camera_is_recording, readonly=True, store=False)
     camera_is_recording = fields.Boolean('Is being recorded by stock camera?', compute=_compute_camera_is_recording, readonly=True, store=False)
     camera = fields.Many2one(related="picking_id.camera", readonly=True)
+    video = fields.Many2one("stock.move.video", "Transfer video", readonly=True)
 
     def _get_output_filename(self, prefix="tmp"):
         record_id = self.id
@@ -37,6 +38,11 @@ class StockMove(models.Model):
 
     @api.multi
     def camera_record_start(self):
+        self.ensure_one()
+
+        # TODO: message if video allready exists
+        # TODO: check permission
+
         output = None
         
         def on_start_callback(record_id, video_width, video_height, video_fps):
@@ -57,8 +63,8 @@ class StockMove(models.Model):
             nonlocal output
             output.release()
 
-        for s in self:
-            s.picking_id.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback, on_finish_callback)
+        self.picking_id.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback, on_finish_callback)
+        
 
     @api.multi
     def camera_record_stop(self):
@@ -68,6 +74,6 @@ class StockMove(models.Model):
             if not s.camera.camera_instance().stop_recording(s.id):
                 continue
 
-            self.env['stock.camera.video'].create({
+            self.env['stock.move.video'].create({
                 "move": s,
             })

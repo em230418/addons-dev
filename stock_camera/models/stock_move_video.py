@@ -12,7 +12,7 @@ import logging
 import time
 
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
-VIDEO_OUTPUT_DIRNAME = "stock_picking_video"
+VIDEO_OUTPUT_DIRNAME = "stock_move_video"
 
 upload_lock = Lock()
 _logger = logging.getLogger(__name__)
@@ -25,17 +25,18 @@ def output_dir_abs(self):
     return output_dir
     
 
-class StockCameraVideo(models.Model):
+class StockMoveVideo(models.Model):
 
-    _name = 'stock.camera.video'
-    _description = 'Stock Camera Video'
+    _name = 'stock.move.video'
+    _description = 'Product tranfser video'
 
     name = fields.Char("Name", required=True)
-    picking = fields.Many2one("stock.picking", string="Picking", required=True)
+    move = fields.One2many("stock.move", "id", required=True)
     filename = fields.Char("Filename", required=True)
     date_created = fields.Datetime("Video creation date", readonly=True, required=True)
     date_uploaded = fields.Datetime("Video upload date", readonly=True)
     url = fields.Char("URL", readony=True)
+    product = fields.Many2one("product.product", related="move.product_id")
 
     def abspath(self):
         return join(output_dir_abs(self), self.filename)
@@ -55,11 +56,9 @@ class StockCameraVideo(models.Model):
 
         rename(tmp_file, new_file)
         vals["filename"] = basename(new_file)
-        vals["picking"] = vals["picking"].id
         vals["date_created"] = now
-        del vals["move"]
         
-        return super(StockCameraVideo, self).create(vals)
+        return super(StockMoveVideo, self).create(vals)
 
     @api.multi
     def upload(self):

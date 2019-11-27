@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="stock_camera_upload_video_cron" model="ir.cron">
-        <field name="name">Upload stock camera videos</field>
+        <field name="name">Upload tranfser videos</field>
         <field name="active" eval="True" />
         <field name="user_id" ref="base.user_root" />
         <field name="interval_number">1</field>
         <field name="interval_type">minutes</field>
         <field name="numbercall">-1</field>  <!-- don't limit the number of calls -->
-        <field name="model_id" ref="model_stock_camera_video" />
+        <field name="model_id" ref="model_stock_move_video" />
         <field name="state">code</field>
         <field name="code">model.upload()</field>
     </record>
