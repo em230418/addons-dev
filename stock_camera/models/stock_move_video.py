@@ -25,13 +25,14 @@ def output_dir_abs(self):
     return output_dir
     
 
+# Note: there was an idea to make one2one
 class StockMoveVideo(models.Model):
 
     _name = 'stock.move.video'
     _description = 'Product tranfser video'
 
     name = fields.Char("Name", required=True)
-    move = fields.One2many("stock.move", "id", required=True)
+    move = fields.Many2one("stock.move", required=True)
     filename = fields.Char("Filename", required=True)
     date_created = fields.Datetime("Video creation date", readonly=True, required=True)
     date_uploaded = fields.Datetime("Video upload date", readonly=True)
@@ -43,9 +44,9 @@ class StockMoveVideo(models.Model):
         
     def create(self, vals):
         now = fields.Datetime.now()
-        vals["picking"] = vals["move"].picking_id
+        picking = vals["move"].picking_id
         tmp_file = vals["move"]._get_output_filename()
-        vals["name"] = "{} - {} - {}".format(vals["picking"].name, vals["move"].name, now)
+        vals["name"] = "{} - {} - {}".format(picking.name, vals["move"].name, now)
 
         new_file = join(
             output_dir_abs(self),
@@ -57,6 +58,7 @@ class StockMoveVideo(models.Model):
         rename(tmp_file, new_file)
         vals["filename"] = basename(new_file)
         vals["date_created"] = now
+        vals["move"] = vals["move"].id
         
         return super(StockMoveVideo, self).create(vals)
 

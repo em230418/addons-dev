@@ -18,9 +18,12 @@ class StockCameraConfig(models.Model):
     # TODO: on change uri, cleanup threads
 
     @api.model
-    def camera_instance(self):
+    def camera_instance(self, prepare=False):
         self.ensure_one()
-        return Camera(self.uri)
+        instance = Camera(self.uri)
+        if prepare:
+            instance.prepare()
+        return instance
 
     @api.multi
     def watch_action(self):

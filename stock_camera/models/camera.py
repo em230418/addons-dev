@@ -91,6 +91,7 @@ class Camera(object):
 
         self.video_width = None
         self.video_height = None
+        self.video_fps = None
 
         # TODO: rename to frame_callbacks
         self.recording_callbacks = {}
@@ -105,7 +106,12 @@ class Camera(object):
         if not self.thread:
             self.thread = threading.Thread(target=self._thread)
             self.thread.start()
-        
+
+    def prepare(self):
+        # wait until frames are available
+        while self.get_frame() is None:
+            time.sleep(0)
+
     def get_frame(self):
         """Return the current camera frame."""
         self.last_access = time.time()

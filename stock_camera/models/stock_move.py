@@ -63,7 +63,7 @@ class StockMove(models.Model):
             nonlocal output
             output.release()
 
-        self.picking_id.camera.camera_instance().start_recording(s.id, on_start_callback, on_frame_callback, on_finish_callback)
+        self.picking_id.camera.camera_instance(prepare=True).start_recording(self.id, on_start_callback, on_frame_callback, on_finish_callback)
         
 
     @api.multi
