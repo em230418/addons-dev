@@ -22,10 +22,13 @@
     ],
     "external_dependencies": {"python": ["cv2", "vimeo"], "bin": []},
     "data": [
+        'views/stock_move.xml',
+        'views/product_template.xml',
         'data/ir_cron.xml',
         'views/stock_picking_views.xml',
         'views/stock_camera.xml',
         'security/ir.model.access.csv',
+        'security/groups.xml',
     ],
     "demo": [
         'demo/stock_camera_config.xml',

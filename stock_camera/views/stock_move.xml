@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2019 Eugene Molotov <https://it-projects.info/team/em230418>
+    License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html). -->
+<odoo>
+    <record id="video_overwrite_dialog" model="ir.ui.view">
+        <field name="name">video_overwrite_dialog</field>
+        <field name="model">stock.move</field>
+        <field name="arch" type="xml">
+            <form>
+                <p>Video already exists for this product line. Do you want to override?</p>
+            </form>
+            <footer>
+                <button string="Yes" class="btn-primary" name="camera_record_start" type="object" />
+                <button string="No" class="btn-secondary" special="cancel" />
+            </footer> 
+        </field>
+    </record>
+</odoo>

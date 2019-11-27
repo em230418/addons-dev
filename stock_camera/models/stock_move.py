@@ -4,6 +4,7 @@
 from odoo import api, fields, models
 from .stock_move_video import output_dir_abs
 from os import path, makedirs
+from odoo.exceptions import AccessError
 import cv2
 import time
 import string
@@ -40,8 +41,23 @@ class StockMove(models.Model):
     def camera_record_start(self):
         self.ensure_one()
 
-        # TODO: message if video allready exists
-        # TODO: check permission
+        if self.video:
+            if not self.env.user.has_group('stock_camera.group_allow_overwrite_video'):
+                raise AccessError("A video already exists for this product line")
+
+            if self._context.get("overwrite_video", False):
+                self.video.unlink()
+            else:
+                confirm_dialog = self.env.ref("stock_camera.video_overwrite_dialog")
+                return {
+                    "type": "ir.actions.act_window",
+                    "res_model": "stock.move",
+                    "views": [(confirm_dialog.id, "form")],
+                    "views_id": confirm_dialog.id,
+                    "res_id": self.id,
+                    "context": {"overwrite_video": True},
+                    "target": "new",
+                }
 
         output = None
         
@@ -68,12 +84,12 @@ class StockMove(models.Model):
 
     @api.multi
     def camera_record_stop(self):
-        for s in self:
+        for record in self:
 
             # check if it was recording actually
-            if not s.camera.camera_instance().stop_recording(s.id):
+            if not record.camera.camera_instance().stop_recording(record.id):
                 continue
 
-            self.env['stock.move.video'].create({
-                "move": s,
+            record.video = self.env['stock.move.video'].create({
+                "move": record,
             })
