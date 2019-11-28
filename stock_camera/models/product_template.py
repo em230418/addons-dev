@@ -8,6 +8,6 @@ class ProductTemplate(models.Model):
 
     _inherit = 'product.template'
 
-    stock_move_videos = fields.One2many("stock.move.video", "product")
+    stock_move_videos = fields.One2many("stock.move.video", "product_tmpl_id", readonly=True)
 
     

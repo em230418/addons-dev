@@ -3,11 +3,8 @@
 
 from odoo import api, fields, models
 from odoo.tools import config
-# TODO: do not import, use just os
 import os
 import os.path
-from os import path
-from os.path import split, join, basename
 from ..tools import upload_vimeo
 from threading import Lock
 import string
@@ -41,10 +38,11 @@ class StockMoveVideo(models.Model):
     date_created = fields.Datetime("Video creation date", readonly=True, required=True)
     date_uploaded = fields.Datetime("Video upload date", readonly=True)
     url = fields.Char("URL", readony=True)
-    product = fields.Many2one("product.product", related="move.product_id")
+    product_id = fields.Many2one("product.product", related="move.product_id", required=True, readonly=True)
+    product_tmpl_id = fields.Many2one("product.template", related="move.product_tmpl_id", required=True, readonly=True)
 
     def abspath(self):
-        return join(output_dir_abs(self), self.filename)
+        return os.path.join(output_dir_abs(self), self.filename)
         
     def create(self, vals):
         now = fields.Datetime.now()
@@ -52,7 +50,7 @@ class StockMoveVideo(models.Model):
         tmp_file = vals["move"]._get_output_filename()
         vals["name"] = "{} - {} - {}".format(picking.name, vals["move"].name, now)
 
-        new_file = join(
+        new_file = os.path.join(
             output_dir_abs(self),
             "{}_.avi".format(
                 "".join([c for c in vals["name"] if c in VALID_CHARS]),
@@ -60,8 +58,10 @@ class StockMoveVideo(models.Model):
         )
 
         os.rename(tmp_file, new_file)
-        vals["filename"] = basename(new_file)
+        vals["filename"] = os.path.basename(new_file)
         vals["date_created"] = now
+        #vals["product_id"] = vals["move"].product_id.id
+        #vals["product_tmpl_id"] = vals["move"].product_tmpl_id.id
         vals["move"] = vals["move"].id
         vals["picking"] = picking.id
         

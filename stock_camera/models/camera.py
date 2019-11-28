@@ -111,6 +111,9 @@ class Camera(object):
         # wait until frames are available
         while self.get_frame() is None:
             time.sleep(0)
+            # in case if thread is not running
+            # we escape infinite loop by starting it
+            self._start_thread()
 
     def get_frame(self):
         """Return the current camera frame."""
